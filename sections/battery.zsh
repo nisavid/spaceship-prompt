@@ -2,6 +2,8 @@
 # Battery
 #
 
+zmodload zsh/param/private
+
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
@@ -16,12 +18,13 @@
 # ------------------------------------------------------------------------------
 
 SPACESHIP_BATTERY_SHOW="${SPACESHIP_BATTERY_SHOW=true}"
-SPACESHIP_BATTERY_PREFIX="${SPACESHIP_BATTERY_PREFIX=""}"
-SPACESHIP_BATTERY_SUFFIX="${SPACESHIP_BATTERY_SUFFIX="$SPACESHIP_PROMPT_DEFAULT_SUFFIX"}"
+SPACESHIP_BATTERY_THRESHOLD="${SPACESHIP_BATTERY_THRESHOLD=10}"
+SPACESHIP_BATTERY_DIVIDER="${SPACESHIP_BATTERY_DIVIDER="$SPACESHIP_PROMPT_DEFAULT_DIVIDER"}"
+SPACESHIP_BATTERY_PREFIX="${SPACESHIP_BATTERY_PREFIX="$SPACESHIP_PROMPT_DEFAULT_PREFIX"}"
+SPACESHIP_BATTERY_SYMBOL_FULL="${SPACESHIP_BATTERY_SYMBOL_FULL="•"}"
 SPACESHIP_BATTERY_SYMBOL_CHARGING="${SPACESHIP_BATTERY_SYMBOL_CHARGING="⇡"}"
 SPACESHIP_BATTERY_SYMBOL_DISCHARGING="${SPACESHIP_BATTERY_SYMBOL_DISCHARGING="⇣"}"
-SPACESHIP_BATTERY_SYMBOL_FULL="${SPACESHIP_BATTERY_SYMBOL_FULL="•"}"
-SPACESHIP_BATTERY_THRESHOLD="${SPACESHIP_BATTERY_THRESHOLD=10}"
+SPACESHIP_BATTERY_SUFFIX="${SPACESHIP_BATTERY_SUFFIX="$SPACESHIP_PROMPT_DEFAULT_SUFFIX"}"
 
 # ------------------------------------------------------------------------------
 # Section
@@ -35,7 +38,8 @@ SPACESHIP_BATTERY_THRESHOLD="${SPACESHIP_BATTERY_THRESHOLD=10}"
 spaceship_battery() {
   [[ $SPACESHIP_BATTERY_SHOW == false ]] && return
 
-  local battery_data battery_percent battery_status battery_color
+  local battery_data battery_percent battery_status battery_color battery_symbol
+  private -a match mbegin mend; private MATCH; private -i MBEGIN MEND
 
   if spaceship::exists pmset; then
     battery_data=$(pmset -g batt | grep "InternalBattery")
@@ -97,6 +101,7 @@ spaceship_battery() {
         $SPACESHIP_BATTERY_SHOW == 'charged' && $battery_status =~ "(charged|full)" ]]; then
     spaceship::section \
       "$battery_color" \
+      "$SPACESHIP_BATTERY_DIVIDER" \
       "$SPACESHIP_BATTERY_PREFIX" \
       "$battery_symbol$battery_percent%%" \
       "$SPACESHIP_BATTERY_SUFFIX"

@@ -5,6 +5,8 @@
 # License: MIT
 # https://github.com/denysdovhan/spaceship-prompt
 
+zmodload zsh/param/private
+
 # Current version of Spaceship
 # Useful for issue reporting
 export SPACESHIP_VERSION='3.11.0'
@@ -91,6 +93,62 @@ SPACESHIP_PROMPT_PREFIXES_SHOW="${SPACESHIP_PROMPT_PREFIXES_SHOW=true}"
 SPACESHIP_PROMPT_SUFFIXES_SHOW="${SPACESHIP_PROMPT_SUFFIXES_SHOW=true}"
 SPACESHIP_PROMPT_DEFAULT_PREFIX="${SPACESHIP_PROMPT_DEFAULT_PREFIX="via "}"
 SPACESHIP_PROMPT_DEFAULT_SUFFIX="${SPACESHIP_PROMPT_DEFAULT_SUFFIX=" "}"
+SPACESHIP_PROMPT_DEFAULT_DIVIDER="${SPACESHIP_PROMPT_DEFAULT_DIVIDER="•"}"
+
+if [[ ! -v SPACESHIP_DEFAULT_COLORMAP ]]; then
+  readonly -gA SPACESHIP_DEFAULT_COLORMAP=(
+    black 21,21,21
+    red 255,82,82
+    green 195,216,44
+    yellow 255,193,53
+    blue 66,165,254
+    magenta 216,27,96
+    cyan 0,172,193
+    white 161,176,184
+    brblack 112,130,132
+    brwhite 245,245,245
+  )
+fi
+
+if [[ ! -v SPACESHIP_COLORMAP ]]; then
+  typeset -gA SPACESHIP_COLORMAP=("${(kv@)SPACESHIP_DEFAULT_COLORMAP}")
+fi
+
+if [[ ! -v SPACESHIP_LOGLEVELS_ALL ]]; then
+  readonly -ga SPACESHIP_LOGLEVELS_ALL=( error warning info debug )
+fi
+
+if [[ ! -v SPACESHIP_DEFAULT_LOGLEVEL_HIGHLIGHTS ]]; then
+  readonly -gA SPACESHIP_DEFAULT_LOGLEVEL_HIGHLIGHTS=(
+    error $'%F{red}%B\0%b%f'
+    warning $'%F{yellow}%B\0%b%f'
+    info $'%F{cyan}\0%f'
+    debug $'%F{magenta}\0%f'
+  )
+fi
+
+if [[ ! -v SPACESHIP_LOGLEVEL_HIGHLIGHTS ]]; then
+  typeset -gA SPACESHIP_LOGLEVEL_HIGHLIGHTS=("${(kv@)SPACESHIP_DEFAULT_LOGLEVEL_HIGHLIGHTS}")
+fi
+
+if [[ ! -v SPACESHIP_LOGLEVEL_TRACE ]]; then
+  typeset -gA SPACESHIP_LOGLEVEL_TRACE=(
+    error section
+    warning section
+    info top
+    debug full
+  )
+fi
+
+if [[ ! -v __spaceship_prompt_opened ]]; then
+  typeset -g __spaceship_prompt_opened=$SPACESHIP_PROMPT_FIRST_PREFIX_SHOW
+fi
+
+typeset -g __spaceship_is_in_rprompt
+
+typeset -ga __spaceship_sections_rendered
+
+[[ ! -v SPACESHIP_LOGLEVEL ]] && typeset -g SPACESHIP_LOGLEVEL='warning'
 
 # ------------------------------------------------------------------------------
 # LIBS
@@ -140,35 +198,55 @@ spaceship::deprecated SPACESHIP_BATTERY_FULL_SYMBOL "Use %BSPACESHIP_BATTERY_SYM
 
 # PROMPT
 # Primary (left) prompt
-spaceship_prompt() {
+spaceship::prompt() {
   # Retrieve exit code of last command to use in exit_code
   # Must be captured before any other command in prompt is executed
   # Must be the very first line in all entry prompt functions, or the value
   # will be overridden by a different command execution - do not move this line!
-  RETVAL=$?
+  local -i RETVAL=$?
 
-  # Should it add a new line before the prompt?
-  [[ $SPACESHIP_PROMPT_ADD_NEWLINE == true ]] && echo -n "$NEWLINE"
+  [[ $SPACESHIP_PROMPT_ADD_NEWLINE == true ]] && print
   spaceship::compose_prompt $SPACESHIP_PROMPT_ORDER
 }
 
 # $RPROMPT
 # Optional (right) prompt
-spaceship_rprompt() {
+spaceship::rprompt() {
   # Retrieve exit code of last command to use in exit_code
-  RETVAL=$?
+  local -i RETVAL=$?
 
+  typeset -g __spaceship_is_in_rprompt=true
   spaceship::compose_prompt $SPACESHIP_RPROMPT_ORDER
+  unset __spaceship_is_in_rprompt
 }
 
 # PS2
 # Continuation interactive prompt
-spaceship_ps2() {
+spaceship::prompt2() {
   # Retrieve exit code of last command to use in exit_code
-  RETVAL=$?
+  local -i RETVAL=$?
 
-  local char="${SPACESHIP_CHAR_SYMBOL_SECONDARY="$SPACESHIP_CHAR_SYMBOL"}"
-  spaceship::section "$SPACESHIP_CHAR_COLOR_SECONDARY" "$char"
+  spaceship::section \
+    "$SPACESHIP_CHAR_COLOR_SECONDARY" \
+    '' \
+    '' \
+    '! spaceship::prompt2::content' \
+    "$SPACESHIP_CHAR_SUFFIX"
+
+  spaceship::colors::clear
+}
+
+spaceship::prompt2::content() {
+  case $SPACESHIP_CHAR_PREFIX_COLOR_SECONDARY in
+    (*,*) spaceship::colors::push : ${(s<,>)SPACESHIP_CHAR_PREFIX_COLOR_SECONDARY} || return ;;
+    (*) spaceship::colors::push bg $SPACESHIP_CHAR_PREFIX_COLOR_SECONDARY || return
+  esac
+
+  print -nP -- "$SPACESHIP_CHAR_PREFIX_SECONDARY"
+
+  spaceship::colors::pop
+
+  print -nP -- "$SPACESHIP_CHAR_SYMBOL_SECONDARY"
 }
 
 # ------------------------------------------------------------------------------
@@ -178,7 +256,7 @@ spaceship_ps2() {
 
 # Runs once when user opens a terminal
 # All preparation before drawing prompt should be done here
-prompt_spaceship_setup() {
+spaceship::setup() {
   autoload -Uz vcs_info
   autoload -Uz add-zsh-hook
 
@@ -203,9 +281,9 @@ prompt_spaceship_setup() {
   zstyle ':vcs_info:git*' formats '%b'
 
   # Expose Spaceship to environment variables
-  PROMPT='$(spaceship_prompt)'
-  PS2='$(spaceship_ps2)'
-  RPS1='$(spaceship_rprompt)'
+  PROMPT='$(spaceship::prompt)'
+  PROMPT2='$(spaceship::prompt2)'
+  RPROMPT='$(spaceship::rprompt)'
 }
 
 # ------------------------------------------------------------------------------
@@ -214,4 +292,4 @@ prompt_spaceship_setup() {
 # ------------------------------------------------------------------------------
 
 # Pass all arguments to the spaceship_setup function
-prompt_spaceship_setup "$@"
+spaceship::setup "$@"

@@ -2,16 +2,20 @@
 # vi-mode
 #
 
+zmodload zsh/param/private
+
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
 
 SPACESHIP_VI_MODE_SHOW="${SPACESHIP_VI_MODE_SHOW=true}"
-SPACESHIP_VI_MODE_PREFIX="${SPACESHIP_VI_MODE_PREFIX=""}"
+SPACESHIP_VI_MODE_DIVIDER="${SPACESHIP_VI_MODE_DIVIDER="$SPACESHIP_PROMPT_DEFAULT_DIVIDER"}"
+SPACESHIP_VI_MODE_INSERT_COLOR="${SPACESHIP_VI_MODE_INSERT_COLOR="white"}"
+SPACESHIP_VI_MODE_NORMAL_COLOR="${SPACESHIP_VI_MODE_NORMAL_COLOR="blue"}"
+SPACESHIP_VI_MODE_PREFIX="${SPACESHIP_VI_MODE_PREFIX="$SPACESHIP_PROMPT_DEFAULT_PREFIX"}"
+SPACESHIP_VI_MODE_INSERT_SYMBOL="${SPACESHIP_VI_MODE_INSERT_SYMBOL="[I]"}"
+SPACESHIP_VI_MODE_NORMAL_SYMBOL="${SPACESHIP_VI_MODE_NORMAL_SYMBOL="[N]"}"
 SPACESHIP_VI_MODE_SUFFIX="${SPACESHIP_VI_MODE_SUFFIX="$SPACESHIP_PROMPT_DEFAULT_SUFFIX"}"
-SPACESHIP_VI_MODE_INSERT="${SPACESHIP_VI_MODE_INSERT="[I]"}"
-SPACESHIP_VI_MODE_NORMAL="${SPACESHIP_VI_MODE_NORMAL="[N]"}"
-SPACESHIP_VI_MODE_COLOR="${SPACESHIP_VI_MODE_COLOR="white"}"
 
 # ------------------------------------------------------------------------------
 # Section
@@ -21,22 +25,22 @@ SPACESHIP_VI_MODE_COLOR="${SPACESHIP_VI_MODE_COLOR="white"}"
 spaceship_vi_mode() {
   [[ $SPACESHIP_VI_MODE_SHOW == true ]] || return
 
-  if bindkey | grep "vi-quoted-insert" > /dev/null 2>&1; then # check if vi-mode enabled
-    local mode_indicator="${SPACESHIP_VI_MODE_INSERT}"
+  if bindkey | grep --silent 'vi-quoted-insert'; then
+    private color symbol
 
-    case "${KEYMAP}" in
-      main|viins)
-      mode_indicator="${SPACESHIP_VI_MODE_INSERT}"
-      ;;
-      vicmd)
-      mode_indicator="${SPACESHIP_VI_MODE_NORMAL}"
-      ;;
-    esac
+    if [[ $KEYMAP == 'vicmd' ]]; then
+      color=$SPACESHIP_VI_MODE_NORMAL_COLOR
+      symbol=$SPACESHIP_VI_MODE_NORMAL_SYMBOL
+    else
+      color=$SPACESHIP_VI_MODE_INSERT_COLOR
+      symbol=$SPACESHIP_VI_MODE_INSERT_SYMBOL
+    fi
 
     spaceship::section \
-      "$SPACESHIP_VI_MODE_COLOR" \
+      "$color" \
+      "$SPACESHIP_VI_MODE_DIVIDER" \
       "$SPACESHIP_VI_MODE_PREFIX" \
-      "$mode_indicator" \
+      "$symbol" \
       "$SPACESHIP_VI_MODE_SUFFIX"
   fi
 }

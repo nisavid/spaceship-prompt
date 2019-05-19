@@ -26,6 +26,7 @@ Take a look at [Contribution guidelines](../CONTRIBUTING.md) for further informa
 # ------------------------------------------------------------------------------
 
 SPACESHIP_FOOBAR_SHOW="${SPACESHIP_FOOBAR_SHOW=true}"
+SPACESHIP_FOOBAR_DIVIDER="${SPACESHIP_FOOBAR_DIVIDER="$SPACESHIP_PROMPT_DEFAULT_DIVIDER"}"
 SPACESHIP_FOOBAR_PREFIX="${SPACESHIP_FOOBAR_PREFIX="$SPACESHIP_PROMPT_DEFAULT_PREFIX"}"
 SPACESHIP_FOOBAR_SUFFIX="${SPACESHIP_FOOBAR_SUFFIX="$SPACESHIP_PROMPT_DEFAULT_SUFFIX"}"
 SPACESHIP_FOOBAR_SYMBOL="${SPACESHIP_FOOBAR_SYMBOL="🍷 "}"
@@ -69,6 +70,7 @@ spaceship_foobar() {
   # Display foobar section
   spaceship::section \
     "$SPACESHIP_FOOBAR_COLOR" \
+    "$SPACESHIP_FOOBAR_DIVIDER" \
     "$SPACESHIP_FOOBAR_PREFIX" \
     "$SPACESHIP_FOOBAR_SYMBOL$foobar_status" \
     "$SPACESHIP_FOOBAR_SUFFIX"
@@ -129,12 +131,13 @@ Both `prefix` and `suffix` are optional. They are equal to empty strings by defa
 # Backslash is used to escape line ending
 spaceship::section \
   "$SPACESHIP_SECTION_COLOR" \
+  "$SPACESHIP_SECTION_DIVIDER" \
   "$SPACESHIP_SECTION_PREFIX" \
   "$SPACESHIP_SECTION_SYMBOL$section_content" \
   "$SPACESHIP_SECTION_SUFFIX"
 
 # Display prompt section without prefix and suffix
-spaceship::section "$color" "$SPACESHIP_CHAR_SYMBOL"
+spaceship::section "$color" '' "$SPACESHIP_CHAR_SYMBOL"
 ```
 
 ## `spaceship::exists <command>`

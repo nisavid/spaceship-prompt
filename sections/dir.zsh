@@ -3,19 +3,25 @@
 #
 # Current directory. Return only three last items of path
 
+zmodload zsh/param/private
+
 # ------------------------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------------------------
 
 SPACESHIP_DIR_SHOW="${SPACESHIP_DIR_SHOW=true}"
-SPACESHIP_DIR_PREFIX="${SPACESHIP_DIR_PREFIX="in "}"
-SPACESHIP_DIR_SUFFIX="${SPACESHIP_DIR_SUFFIX="$SPACESHIP_PROMPT_DEFAULT_SUFFIX"}"
-SPACESHIP_DIR_TRUNC="${SPACESHIP_DIR_TRUNC=3}"
-SPACESHIP_DIR_TRUNC_PREFIX="${SPACESHIP_DIR_TRUNC_PREFIX=}"
-SPACESHIP_DIR_TRUNC_REPO="${SPACESHIP_DIR_TRUNC_REPO=true}"
+SPACESHIP_DIR_DIVIDER="${SPACESHIP_DIR_DIVIDER="$SPACESHIP_PROMPT_DEFAULT_DIVIDER"}"
 SPACESHIP_DIR_COLOR="${SPACESHIP_DIR_COLOR="cyan"}"
-SPACESHIP_DIR_LOCK_SYMBOL="${SPACESHIP_DIR_LOCK_SYMBOL=" "}"
+SPACESHIP_DIR_SYMBOL="${SPACESHIP_DIR_SYMBOL="in"}"
+SPACESHIP_DIR_PREFIX="${SPACESHIP_DIR_PREFIX="${SPACESHIP_PROMPT_DEFAULT_PREFIX}${SPACESHIP_DIR_SYMBOL}${SPACESHIP_PROMPT_DEFAULT_PREFIX}"}"
+SPACESHIP_DIR_TRUNC="${SPACESHIP_DIR_TRUNC=3}"
+SPACESHIP_DIR_TRUNC_REPO="${SPACESHIP_DIR_TRUNC_REPO=true}"
+SPACESHIP_DIR_TRUNC_PREFIX="${SPACESHIP_DIR_TRUNC_PREFIX=}"
+SPACESHIP_DIR_PATH_SEPARATOR="${SPACESHIP_DIR_PATH_SEPARATOR="/"}"
 SPACESHIP_DIR_LOCK_COLOR="${SPACESHIP_DIR_LOCK_COLOR="red"}"
+SPACESHIP_DIR_LOCK_PREFIX="${SPACESHIP_DIR_LOCK_PREFIX="$SPACESHIP_PROMPT_DEFAULT_PREFIX"}"
+SPACESHIP_DIR_LOCK_SYMBOL="${SPACESHIP_DIR_LOCK_SYMBOL=""}"
+SPACESHIP_DIR_SUFFIX="${SPACESHIP_DIR_SUFFIX="$SPACESHIP_PROMPT_DEFAULT_SUFFIX"}"
 
 # ------------------------------------------------------------------------------
 # Section
@@ -24,11 +30,19 @@ SPACESHIP_DIR_LOCK_COLOR="${SPACESHIP_DIR_LOCK_COLOR="red"}"
 spaceship_dir() {
   [[ $SPACESHIP_DIR_SHOW == false ]] && return
 
-  local 'dir' 'trunc_prefix'
+  spaceship::section \
+    "$SPACESHIP_DIR_COLOR" \
+    "$SPACESHIP_DIR_DIVIDER" \
+    "$SPACESHIP_DIR_PREFIX" \
+    '! spaceship_dir::path spaceship_dir::lock' \
+    "$SPACESHIP_DIR_SUFFIX"
+}
 
-  # Threat repo root as a top-level directory or not
+spaceship_dir::path() {
+  private dir trunc_prefix
+
   if [[ $SPACESHIP_DIR_TRUNC_REPO == true ]] && spaceship::is_git; then
-    local git_root=$(git rev-parse --show-toplevel)
+    private git_root=$(git rev-parse --show-toplevel)
 
     # Check if the parent of the $git_root is "/"
     if [[ $git_root:h == / ]]; then
@@ -56,13 +70,19 @@ spaceship_dir() {
     dir="$trunc_prefix%${SPACESHIP_DIR_TRUNC}~"
   fi
 
-  if [[ ! -w . ]]; then
-    SPACESHIP_DIR_SUFFIX="%F{$SPACESHIP_DIR_LOCK_COLOR}${SPACESHIP_DIR_LOCK_SYMBOL}%f${SPACESHIP_DIR_SUFFIX}"
-  fi
+  print -nP -- ${dir//\//$SPACESHIP_DIR_PATH_SEPARATOR}
+}
 
-  spaceship::section \
-    "$SPACESHIP_DIR_COLOR" \
-    "$SPACESHIP_DIR_PREFIX" \
-    "$dir" \
-    "$SPACESHIP_DIR_SUFFIX"
+spaceship_dir::lock() {
+  if [[ ! -w . ]]; then
+    private -a colors=(\& \&)
+    case $SPACESHIP_DIR_LOCK_COLOR in
+      (*,*) colors=("${(@)SPACESHIP_DIR_LOCK_COLOR}") ;;
+      (*) colors[1]=$SPACESHIP_DIR_LOCK_COLOR
+    esac
+
+    spaceship::colors::push : "${(@)colors}"
+
+    print -nP -- "${SPACESHIP_DIR_LOCK_PREFIX}${SPACESHIP_DIR_LOCK_SYMBOL}"
+  fi
 }
